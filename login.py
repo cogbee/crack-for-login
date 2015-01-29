@@ -179,7 +179,7 @@ class passCreateFromFile(object):
 #需要将域名list传入进来
 class getUser(object):
 	def __init__(self,host,fp):
-		self.user = ['admin','test','root','mysql','tty','guest','admin1','toor']
+		self.user = ['admin','test','root','mysql','tty','guest','admin1','toor','seoadmin']
 		self.hostname = host
 		self.userf = []
 		self.fp = fp
@@ -378,6 +378,9 @@ if __name__ == '__main__':
 	passfilename = raw_input('please input the passwd filename(pass.txt for default):\n')
 	errorkey = raw_input('please input the error key(if it is null,we will use the length of response to judge):\n')
 	threadnum = raw_input('please input the threadpool size(5 for default):\n')
+	posturl = raw_input('please input the post url(if you donnot type in,I will analyse the url instead,but maybe not success):\n')
+	postname = raw_input('please input the post username(just like the below):\n')
+	postpass = raw_input('please input the post passname(just like the below):\n')
 	test = parseUrl(url)
 	if userfilename == '':
 		userfilename = 'user.txt'
@@ -397,9 +400,20 @@ if __name__ == '__main__':
 	test.parsePage()
 	method = test.getMthod()
 	hostlist = test.getHostList()
-	suburl = test.getsubmitUrl()
-	userp = test.getUser()
-	passp = test.getPasswd()
+	#如果没有指定提交的url以及user和name,那么我们会根据分析的结果来处理,如果提交了,那么就以提交的为准。
+	#这是为了来处理目前还不能处理的一些内容
+	if posturl == '':
+		suburl = test.getsubmitUrl()
+	else:
+		suburl = posturl
+	if postname == '':
+		userp = test.getUser()
+	else:
+		userp = postname
+	if postpass == '':
+		passp = test.getPasswd()
+	else:
+		passp = postpass
 	
 	passwordC = passCreateFromUrl(hostlist)
 	passwordF = passCreateFromFile(pass_fp)
