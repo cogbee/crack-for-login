@@ -14,10 +14,14 @@ import os
 import sys
 #同目录下的threadpool.py
 import threadpool
+import threading
 import progressbar
 
 import pdb
 
+
+#创建一个锁
+mutex = threading.Lock()
 
 #需要url
 class parseUrl(object):
@@ -44,7 +48,11 @@ class parseUrl(object):
 		return self.list
 	def getsubmitUrl(self):
 		url_test_path = urlparse(self.url)
-		self.submitUrl = 'http://'+url_test_path.netloc+self.submitUrl
+		#如果action=“”，那么提交的url就是本生
+		if self.submitUrl != '':
+			self.submitUrl = 'http://'+url_test_path.netloc+self.submitUrl
+		else:
+			self.submitUrl = self.url
 		return self.submitUrl
 	def getUser(self):
 		return self.user
@@ -179,7 +187,7 @@ class passCreateFromFile(object):
 #需要将域名list传入进来
 class getUser(object):
 	def __init__(self,host,fp):
-		self.user = ['admin','test','root','mysql','tty','guest','admin1','toor','seoadmin']
+		self.user = ['admin','test','root','mysql','guest','admin1']
 		self.hostname = host
 		self.userf = []
 		self.fp = fp
@@ -236,10 +244,11 @@ class sendP(object):
 		'''
 	def getData(self,username,passlist):
 		for i in range(len(passlist)):
-			#print '******\n'
+			print '******\n'
 			h = httplib2.Http()
 			get_url = self.url + '?' + self.getuser + '=' + username + '&' + self.getpasswd + '=' + passlist[i]
 			res,con = h.request(get_url,self.method.upper())
+			pdb.set_trace()
 			if res['status'] == '302':
 				self.url = res['Location']
 				get_url = self.url + '?' + self.getuser + '=' + username + '&' + self.getpasswd + '=' + passlist[i]
@@ -251,7 +260,11 @@ class sendP(object):
 				else:
 					self.temp.append(username)
 					self.temp.append(passlist[i])
-					success_list.append(self.temp)
+					#加锁解锁
+					if mutex.acquire():
+						if success_list.count(self.temp) == 0:
+							success_list.append(self.temp)
+						mutex.release()
 			#没有定义错误关键字，下面是用长度来做判断
 			else:
 				if self.baselen == 0:
@@ -272,14 +285,20 @@ class sendP(object):
 						self.success = self.presuccess[0]
 						self.temp.append(username)
 						self.temp.append(self.success)
-						success_list.append(self.temp)
-						break
+						if mutex.acquire():
+							if success_list.count(self.temp) == 0:
+								success_list.append(self.temp)
+							mutex.release()
+							break
 					elif self.baselen == len(con) and self.len !=0 and self.len !=len(con):
 						self.success = self.presuccess[1]
 						temp.append(username)
 						temp.append(self.success)
-						success_list.append(temp)
-						break
+						if mutex.acquire():
+							if success_list.count(self.temp) == 0:
+								success_list.append(self.temp)
+							mutex.release()
+							break
 		return self.success
 
 	'''
@@ -290,7 +309,8 @@ class sendP(object):
 	'''
 	def postData(self,username,passlist):
 		for i in range(len(passlist)):
-			#print '---\n'
+			print '---\n'
+			print username
 			h = httplib2.Http()
 			data = {self.getuser:username,self.getpasswd:passlist[i]}
 			headers = {
@@ -315,7 +335,10 @@ class sendP(object):
 				else:
 					self.temp.append(username)
 					self.temp.append(passlist[i])
-					success_list.append(self.temp)
+					if mutex.acquire():
+						if success_list.count(self.temp) == 0:
+							success_list.append(self.temp)
+						mutex.release()
 			#没有定义错误关键字，下面是用长度来做判断
 			else:
 				if self.baselen == 0:
@@ -336,14 +359,20 @@ class sendP(object):
 						self.success = self.presuccess[0]
 						self.temp.append(username)
 						self.temp.append(self.success)
-						success_list.append(self.temp)
-						break
+						if mutex.acquire():
+							if success_list.count(self.temp) == 0:
+								success_list.append(self.temp)
+							mutex.release()
+							break
 					elif self.baselen == len(con) and self.len !=0 and self.len !=len(con):
 						self.success = self.presuccess[1]
 						temp.append(username)
 						temp.append(self.success)
-						success_list.append(temp)
-						break
+						if mutex.acquire():
+							if success_list.count(self.temp) == 0:
+								success_list.append(self.temp)
+							mutex.release()
+							break
 		return self.success
 	'''
 	此处是用来判断，提交数据是post还是get，如果不一样，处理方式就必须不一样。参数跟postData一样
@@ -391,6 +420,7 @@ if __name__ == '__main__':
 	#判断fp是否open成功，在具体的函数时候判断，因为即使不成功，我们也需要运行程序，只是不要这个数据罢了，用url自己变异的密码或用户
 	pass_fp = open(baseloc+'\\'+passfilename,'r')
 	user_fp = open(baseloc+'\\'+userfilename,'r')
+
 		
 	#用来存放正确的用户名以及密码，列表里面还是列表，有2个元素，第一个是用户名，第二是密码。
 	#比如，[['admin','12346'],['root','abc']]
@@ -414,6 +444,9 @@ if __name__ == '__main__':
 		passp = test.getPasswd()
 	else:
 		passp = postpass
+	print 'posturl:'+suburl+'\n'
+	print 'username:'+userp+'\n'
+	print 'password:'+passp+'\n'
 	
 	passwordC = passCreateFromUrl(hostlist)
 	passwordF = passCreateFromFile(pass_fp)
