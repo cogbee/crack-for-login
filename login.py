@@ -187,7 +187,7 @@ class passCreateFromFile(object):
 #需要将域名list传入进来
 class getUser(object):
 	def __init__(self,host,fp):
-		self.user = ['admin','test','root','mysql','guest','admin1']
+		self.user = ['admin','test','root','guest']
 		self.hostname = host
 		self.userf = []
 		self.fp = fp
@@ -248,7 +248,7 @@ class sendP(object):
 			h = httplib2.Http()
 			get_url = self.url + '?' + self.getuser + '=' + username + '&' + self.getpasswd + '=' + passlist[i]
 			res,con = h.request(get_url,self.method.upper())
-			pdb.set_trace()
+			#pdb.set_trace()
 			if res['status'] == '302':
 				self.url = res['Location']
 				get_url = self.url + '?' + self.getuser + '=' + username + '&' + self.getpasswd + '=' + passlist[i]
@@ -311,7 +311,7 @@ class sendP(object):
 		for i in range(len(passlist)):
 			print '---\n'
 			print username
-			h = httplib2.Http()
+			h = httplib2.Http(timeout=5)
 			data = {self.getuser:username,self.getpasswd:passlist[i]}
 			headers = {
 			"Accept-Encoding": "gzip, deflate",
